@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -24,45 +25,25 @@ func main() {
 func initServer(routes Route) {
 	port := 8081
 	http.HandleFunc(routes.Sum, func(w http.ResponseWriter, req *http.Request) {
-		var params Params
-		err := json.NewDecoder(req.Body).Decode(&params)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
+		params := getParams(req.Body)
 		output := params.A + params.B
 		fmt.Fprintf(w, strconv.Itoa(output))
 	})
 
 	http.HandleFunc(routes.Sub, func(w http.ResponseWriter, req *http.Request) {
-		var params Params
-		err := json.NewDecoder(req.Body).Decode(&params)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
+		params := getParams(req.Body)
 		output := params.A - params.B
 		fmt.Fprintf(w, strconv.Itoa(output))
 	})
 
 	http.HandleFunc(routes.Mul, func(w http.ResponseWriter, req *http.Request) {
-		var params Params
-		err := json.NewDecoder(req.Body).Decode(&params)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
+		params := getParams(req.Body)
 		output := params.A * params.B
 		fmt.Fprintf(w, strconv.Itoa(output))
 	})
 
 	http.HandleFunc(routes.Div, func(w http.ResponseWriter, req *http.Request) {
-		var params Params
-		err := json.NewDecoder(req.Body).Decode(&params)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
+		params := getParams(req.Body)
 		output := params.A / params.B
 		fmt.Fprintf(w, strconv.Itoa(output))
 	})
@@ -108,6 +89,15 @@ func initProxy(routes Route) {
 	mux.HandleFunc(routes.Sub, forward)
 	log.Println(fmt.Printf("Proxy Listing @ at http://localhost:%d\n", port))
 	http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
+}
+
+func getParams(body io.ReadCloser) Params {
+	var params Params
+	err := json.NewDecoder(body).Decode(&params)
+	if err != nil {
+		panic(err.Error())
+	}
+	return params
 }
 
 type Params struct {
